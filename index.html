@@ -1,0 +1,1492 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>3D算盤與計算機模擬器</title>
+    <style>
+        body {
+            margin: 0;
+            overflow: hidden;
+            font-family: "Microsoft JhengHei", sans-serif;
+        }
+
+        .drawer {
+            position: absolute;
+            left: -360px;
+            top: 0;
+            width: 360px;
+            height: 100%;
+            background: rgba(255, 255, 255, 0.95);
+            transition: left 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            z-index: 1000;
+            box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+            padding: 20px;
+            box-sizing: border-box;
+        }
+
+        .drawer.open {
+            left: 0;
+        }
+
+        .drawer-toggle {
+            position: absolute;
+            right: -40px;
+            top: 50%;
+            transform: translateY(-50%);
+            background: white;
+            border: none;
+            padding: 10px 12px;
+            cursor: pointer;
+            box-shadow: 2px 0 5px rgba(0, 0, 0, 0.1);
+            border-radius: 0 8px 8px 0;
+            color: #4B5563;
+            transition: all 0.2s ease;
+        }
+
+        .drawer-toggle:hover {
+            background: #F3F4F6;
+        }
+
+        .auto-demo-control {
+            padding: 12px;
+            background: #F9FAFB;
+            border: 1px solid #E5E7EB;
+            border-radius: 8px;
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .auto-demo-control input[type="checkbox"] {
+            width: 16px;
+            height: 16px;
+            accent-color: #3B82F6;
+        }
+
+        .auto-demo-control label {
+            font-size: 14px;
+            color: #4B5563;
+            user-select: none;
+            cursor: pointer;
+        }
+
+        .message-box {
+            padding: 16px;
+            background: #EFF6FF;
+            border: 1px solid #BFDBFE;
+            border-radius: 8px;
+            margin: 10px 0;
+            font-size: 14px;
+            line-height: 1.5;
+            color: #1E40AF;
+        }
+
+        .step-list {
+            flex: 1;
+            overflow-y: auto;
+            padding-right: 8px;
+            border: 1px solid #E5E7EB;
+            border-radius: 8px;
+            background: #FFFFFF;
+        }
+
+        .step-list::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        .step-list::-webkit-scrollbar-track {
+            background: #F3F4F6;
+            border-radius: 3px;
+        }
+
+        .step-list::-webkit-scrollbar-thumb {
+            background: #D1D5DB;
+            border-radius: 3px;
+        }
+
+        .step-item {
+            position: relative;
+            padding: 12px 16px;
+            border-bottom: 1px solid #E5E7EB;
+            font-size: 14px;
+            line-height: 1.6;
+            color: #374151;
+            transition: all 0.2s ease;
+            overflow: hidden;
+        }
+
+        .step-item:last-child {
+            border-bottom: none;
+        }
+
+        .step-item.active {
+            background: #F0F9FF;
+            border-left: 3px solid #3B82F6;
+            font-weight: 500;
+        }
+
+        .step-item.active::before {
+            content: '';
+            position: absolute;
+            left: 0;
+            top: 0;
+            width: 3px;
+            height: 100%;
+            background: #3B82F6;
+            animation: highlightFade 0.666s ease;
+        }
+
+        @keyframes highlightFade {
+            from {
+                opacity: 0;
+                transform: translateY(-100%);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .calculator {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background: rgba(255, 255, 255, 0.95);
+            padding: 24px;
+            border-radius: 12px;
+            box-shadow: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+            min-width: 320px;
+            z-index: 1000;
+            cursor: move;
+            user-select: none;
+        }
+
+        .calculator-display {
+            background: #1a1a1a;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            border: 1px solid #2d2d2d;
+        }
+
+        #display {
+            color: #00ff00;
+            font-family: 'Roboto Mono', monospace;
+            font-size: 32px;
+            text-align: right;
+            margin: 0;
+            padding: 0;
+            min-height: 40px;
+            text-shadow: 0 0 5px #00ff00;
+        }
+
+        .calculator-buttons {
+            display: grid;
+            gap: 12px;
+        }
+
+        .button-row {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 12px;
+        }
+
+        .calc-btn {
+            padding: 16px;
+            font-size: 20px;
+            border: none;
+            border-radius: 8px;
+            background: #64748B;
+            color: white;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+        }
+
+        .calc-btn:hover {
+            background: #94A3B8;
+            transform: translateY(-1px);
+        }
+
+        .calc-btn:active {
+            transform: translateY(1px);
+        }
+
+        .calc-btn.operator {
+            background: #F59E0B;
+            color: white;
+        }
+
+        .calc-btn.operator:hover {
+            background: #FBBF24;
+        }
+
+        .calc-btn.equals {
+            background: #10B981;
+        }
+
+        .calc-btn.equals:hover {
+            background: #34D399;
+        }
+
+        .calc-btn.clear {
+            background: #EF4444;
+        }
+
+        .calc-btn.clear:hover {
+            background: #F87171;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="drawer">
+        <button class="drawer-toggle">></button>
+        <div class="auto-demo-control">
+            <input type="checkbox" id="autoDemo">
+            <label for="autoDemo">自動演示</label>
+        </div>
+        <div class="message-box" id="messageBox"></div>
+        <div class="step-list" id="stepList"></div>
+    </div>
+
+    <div class="calculator">
+        <div class="calculator-display">
+            <div id="display">0</div>
+        </div>
+        <div class="calculator-buttons">
+            <div class="button-row">
+                <button class="calc-btn" data-value="7">7</button>
+                <button class="calc-btn" data-value="8">8</button>
+                <button class="calc-btn" data-value="9">9</button>
+                <button class="calc-btn operator" data-op="multiply">×</button>
+            </div>
+            <div class="button-row">
+                <button class="calc-btn" data-value="4">4</button>
+                <button class="calc-btn" data-value="5">5</button>
+                <button class="calc-btn" data-value="6">6</button>
+                <button class="calc-btn operator" data-op="subtract">−</button>
+            </div>
+            <div class="button-row">
+                <button class="calc-btn" data-value="1">1</button>
+                <button class="calc-btn" data-value="2">2</button>
+                <button class="calc-btn" data-value="3">3</button>
+                <button class="calc-btn operator" data-op="add">+</button>
+            </div>
+            <div class="button-row">
+                <button class="calc-btn" data-value="0">0</button>
+                <button class="calc-btn" data-value=".">.</button>
+                <button class="calc-btn clear" data-op="clear">C</button>
+                <button class="calc-btn equals" data-op="equals">=</button>
+            </div>
+        </div>
+    </div>
+
+    <script type="importmap">
+    {
+        "imports": {
+            "three": "https://unpkg.com/three@0.159.0/build/three.module.js",
+            "three/addons/": "https://unpkg.com/three@0.159.0/examples/jsm/"
+        }
+    }
+    </script>
+
+    <script type="module">
+        // 計算步驟類
+        class CalculationSteps {
+            static generateSteps(num1, num2, operator) {
+                switch (operator) {
+                    case 'add': return this.addition(num1, num2);
+                    case 'subtract': return this.subtraction(num1, num2);
+                    case 'multiply': return this.multiplication(num1, num2);
+                    default: return [];
+                }
+            }
+
+            static splitNumber(number) {
+                const [integerPart, decimalPart = ""] = number.toString().split(".");
+                return {
+                    integerPart: integerPart.split('').map(Number).reverse(),
+                    decimalPart: decimalPart.split('').map(Number)
+                };
+            }
+
+            static addition(a, b) {
+                const aParts = this.splitNumber(a);
+                const bParts = this.splitNumber(b);
+                const steps = [];
+                let prevCarry = 0;
+
+                // 小數部分
+                const maxDecimalLength = Math.max(aParts.decimalPart.length, bParts.decimalPart.length);
+                while (aParts.decimalPart.length < maxDecimalLength) aParts.decimalPart.push(0);
+                while (bParts.decimalPart.length < maxDecimalLength) bParts.decimalPart.push(0);
+
+                for (let i = maxDecimalLength - 1; i >= 0; i--) {
+                    const sum = aParts.decimalPart[i] + bParts.decimalPart[i] + prevCarry;
+                    const nextCarry = Math.floor(sum / 10);
+                    steps.push({
+                        type: 'decimal',
+                        position: i,
+                        values: {
+                            a: aParts.decimalPart[i],
+                            b: bParts.decimalPart[i],
+                            prevCarry: prevCarry,
+                            nextCarry: nextCarry
+                        },
+                        result: sum % 10,
+                        columnIndex: 8 + i + 1
+                    });
+                    prevCarry = nextCarry;
+                }
+
+                // 整數部分
+                const maxIntegerLength = Math.max(aParts.integerPart.length, bParts.integerPart.length);
+                while (aParts.integerPart.length < maxIntegerLength) aParts.integerPart.push(0);
+                while (bParts.integerPart.length < maxIntegerLength) bParts.integerPart.push(0);
+
+                for (let i = 0; i < maxIntegerLength; i++) {
+                    const sum = aParts.integerPart[i] + bParts.integerPart[i] + prevCarry;
+                    const nextCarry = Math.floor(sum / 10);
+                    steps.push({
+                        type: 'integer',
+                        position: i,
+                        values: {
+                            a: aParts.integerPart[i],
+                            b: bParts.integerPart[i],
+                            prevCarry: prevCarry,
+                            nextCarry: nextCarry
+                        },
+                        result: sum % 10,
+                        columnIndex: 8 - i
+                    });
+                    prevCarry = nextCarry;
+                }
+
+                // 最後一個進位處理
+                if (prevCarry > 0) {
+                    steps.push({
+                        type: 'integer',
+                        position: maxIntegerLength,
+                        values: {
+                            a: 0,
+                            b: 0,
+                            prevCarry: prevCarry,
+                            nextCarry: 0
+                        },
+                        result: prevCarry,
+                        columnIndex: 8 - maxIntegerLength
+                    });
+                }
+
+                return steps;
+            }
+
+            static subtraction(a, b) {
+                const aParts = this.splitNumber(a);
+                const bParts = this.splitNumber(b);
+                const steps = [];
+                let prevBorrow = 0;
+
+                // 小數部分
+                const maxDecimalLength = Math.max(aParts.decimalPart.length, bParts.decimalPart.length);
+                while (aParts.decimalPart.length < maxDecimalLength) aParts.decimalPart.push(0);
+                while (bParts.decimalPart.length < maxDecimalLength) bParts.decimalPart.push(0);
+
+                for (let i = maxDecimalLength - 1; i >= 0; i--) {
+                    let diff = aParts.decimalPart[i] - bParts.decimalPart[i] - prevBorrow;
+                    const nextBorrow = diff < 0 ? 1 : 0;
+                    if (diff < 0) diff += 10;
+                    steps.push({
+                        type: 'decimal',
+                        position: i,
+                        values: {
+                            a: aParts.decimalPart[i],
+                            b: bParts.decimalPart[i],
+                            prevBorrow: prevBorrow,
+                            nextBorrow: nextBorrow
+                        },
+                        result: diff,
+                        columnIndex: 8 + i + 1
+                    });
+                    prevBorrow = nextBorrow;
+                }
+
+                // 整數部分
+                const maxIntegerLength = Math.max(aParts.integerPart.length, bParts.integerPart.length);
+                while (aParts.integerPart.length < maxIntegerLength) aParts.integerPart.push(0);
+                while (bParts.integerPart.length < maxIntegerLength) bParts.integerPart.push(0);
+
+                for (let i = 0; i < maxIntegerLength; i++) {
+                    let diff = aParts.integerPart[i] - bParts.integerPart[i] - prevBorrow;
+                    const nextBorrow = diff < 0 ? 1 : 0;
+                    if (diff < 0) diff += 10;
+                    steps.push({
+                        type: 'integer',
+                        position: i,
+                        values: {
+                            a: aParts.integerPart[i],
+                            b: bParts.integerPart[i],
+                            prevBorrow: prevBorrow,
+                            nextBorrow: nextBorrow
+                        },
+                        result: diff,
+                        columnIndex: 8 - i
+                    });
+                    prevBorrow = nextBorrow;
+                }
+
+                return steps;
+            }
+
+            static multiplication(a, b) {
+                const aParts = this.splitNumber(a);
+                const bParts = this.splitNumber(b);
+
+                // 移除小數點計算實際數字
+                const aNum = parseInt(aParts.integerPart.reverse().join('') + aParts.decimalPart.join(''));
+                const bNum = parseInt(bParts.integerPart.reverse().join('') + bParts.decimalPart.join(''));
+
+                // 計算小數位數
+                const decimalPlaces = aParts.decimalPart.length + bParts.decimalPart.length;
+
+                const aDigits = aNum.toString().split('').map(Number).reverse();
+                const bDigits = bNum.toString().split('').map(Number).reverse();
+
+                const result = Array(aDigits.length + bDigits.length).fill(0);
+                const steps = [];
+
+                // 按位相乘
+                for (let i = 0; i < bDigits.length; i++) {
+                    for (let j = 0; j < aDigits.length; j++) {
+                        const product = bDigits[i] * aDigits[j];
+                        const position = i + j;
+
+                        result[position] += product;
+                        steps.push({
+                            type: 'multiply',
+                            position: position,
+                            values: {
+                                a: aDigits[j],
+                                b: bDigits[i],
+                                prevResult: result[position] - product,
+                                nextResult: result[position]
+                            },
+                            result: result[position],
+                            columnIndex: 8 - position + decimalPlaces
+                        });
+
+                        if (result[position] >= 10) {
+                            const carry = Math.floor(result[position] / 10);
+                            result[position + 1] += carry;
+                            result[position] %= 10;
+                            steps.push({
+                                type: 'carry',
+                                position: position + 1,
+                                values: {
+                                    prevResult: result[position + 1] - carry,
+                                    carry: carry,
+                                    nextResult: result[position + 1]
+                                },
+                                result: result[position + 1],
+                                columnIndex: 8 - (position + 1) + decimalPlaces
+                            });
+                        }
+                    }
+                }
+
+                if (decimalPlaces > 0) {
+                    steps.push({
+                        type: 'decimal_adjust',
+                        decimalPlaces: decimalPlaces,
+                        description: `將結果往左移動${decimalPlaces}位小數點`
+                    });
+                }
+
+                return steps;
+            }
+        }
+
+        // 抽屜控制類
+        class DrawerController {
+            constructor() {
+                this.drawer = document.querySelector('.drawer');
+                this.toggleButton = document.querySelector('.drawer-toggle');
+                this.messageBox = document.getElementById('messageBox');
+                this.stepList = document.getElementById('stepList');
+                this.autoDemoCheckbox = document.getElementById('autoDemo');
+
+                this.isOpen = false;
+                this.isAutoPlaying = false;
+                this.steps = [];
+                this.currentStepIndex = -1;
+                this.calculator = null;
+                this.abacus = null;
+                this.currentValue = '';
+                this.previousValue = '';
+
+                this.autoDemoCheckbox.checked = true;
+                this.setupEventListeners();
+            }
+
+            setupEventListeners() {
+                this.toggleButton.addEventListener('click', () => this.toggle());
+                this.autoDemoCheckbox.addEventListener('change', () => {
+                    if (this.autoDemoCheckbox.checked && this.steps.length > 0) {
+                        this.startAutoDemo();
+                    }
+                });
+            }
+
+            setCalculatorAndAbacus(calculator, abacus) {
+                this.calculator = calculator;
+                this.abacus = abacus;
+            }
+
+            setSteps(steps, prevValue, currentValue) {
+                this.steps = steps;
+                this.currentStepIndex = -1;
+                this.previousValue = prevValue;
+                this.currentValue = currentValue;
+                this.updateStepList();
+                if (this.autoDemoCheckbox.checked) {
+                    this.startAutoDemo();
+                }
+            }
+
+            async startAutoDemo() {
+                if (!this.steps.length) return;
+
+                this.isAutoPlaying = true;
+                document.querySelector('.calculator').classList.add('disabled');
+                this.abacus.disableInteraction = true;
+
+                this.currentStepIndex = -1;
+                await this.demoNextStep();
+            }
+
+            async demoNextStep() {
+                if (!this.autoDemoCheckbox.checked || !this.isAutoPlaying) {
+                    this.endAutoDemo();
+                    return;
+                }
+
+                this.currentStepIndex++;
+                if (this.currentStepIndex < this.steps.length) {
+                    const stepItems = this.stepList.querySelectorAll('.step-item');
+                    stepItems.forEach(item => item.classList.remove('active'));
+                    const currentStep = stepItems[this.currentStepIndex];
+
+                    if (currentStep) {
+                        currentStep.classList.add('active');
+                        currentStep.scrollIntoView({
+                            behavior: 'smooth',
+                            block: 'nearest'
+                        });
+                    }
+
+                    const step = this.steps[this.currentStepIndex];
+                    await this.abacus.animateStep(step);
+
+                    setTimeout(() => this.demoNextStep(), 666);
+                } else {
+                    // 在最後一步完成後檢查結果
+                    const prev = parseFloat(this.previousValue);
+                    const curr = parseFloat(this.currentValue);
+                    const calculatedResult = this.calculator.calculate(prev, curr);
+                    const abacusValue = this.abacus.calculateValue();
+
+                    // 如果算盤值與計算值不同，強制更正
+                    if (Math.abs(calculatedResult - abacusValue) > 0.0001) {
+                        this.abacus.setValueImmediate(calculatedResult);
+                    }
+
+                    document.getElementById('display').textContent = calculatedResult.toFixed(4);
+                    this.messageBox.textContent = `${this.previousValue} ${this.calculator.getOperationSymbol()} ${this.currentValue} = ${calculatedResult.toFixed(4)}`;
+                    this.endAutoDemo();
+                }
+            }
+
+            endAutoDemo() {
+                this.isAutoPlaying = false;
+                document.querySelector('.calculator').classList.remove('disabled');
+                this.abacus.disableInteraction = false;
+            }
+
+            toggle() {
+                this.isOpen = !this.isOpen;
+                this.drawer.classList.toggle('open');
+                this.toggleButton.textContent = this.isOpen ? '<' : '>';
+            }
+
+            showMessage(message) {
+                this.messageBox.textContent = message;
+            }
+
+            updateStepList() {
+                this.stepList.innerHTML = '';
+                this.steps.forEach((step, index) => {
+                    const item = document.createElement('div');
+                    item.className = 'step-item';
+                    item.textContent = this.formatStep(step);
+                    this.stepList.appendChild(item);
+                });
+            }
+
+            formatStep(step) {
+                const getPositionName = (index) => {
+                    const integerPositions = {
+                        1: "個位", 2: "十位", 3: "百位",
+                        4: "千位", 5: "萬位", 6: "十萬位",
+                        7: "百萬位", 8: "千萬位", 9: "億位"
+                    };
+                    const decimalPositions = {
+                        1: "小數第一位", 2: "小數第二位",
+                        3: "小數第三位", 4: "小數第四位"
+                    };
+
+                    const columnIndex = step.columnIndex + 1;
+                    if (columnIndex <= 9) {
+                        return integerPositions[9 - columnIndex + 1] || `第${columnIndex}位`;
+                    } else {
+                        return decimalPositions[columnIndex - 9] || `第${columnIndex}位`;
+                    }
+                };
+
+                const pos = getPositionName(step.columnIndex);
+
+                switch (step.type) {
+                    case 'decimal':
+                    case 'integer': {
+                        if (step.values.prevCarry !== undefined) {
+                            const hasNextCarry = step.values.nextCarry > 0;
+                            return `${pos} (${step.values.a} + ${step.values.b} + 進位 ${step.values.prevCarry})，結果: ${step.result}${hasNextCarry ? '，進位 ' + step.values.nextCarry : ''}`;
+                        } else if (step.values.prevBorrow !== undefined) {
+                            const hasNextBorrow = step.values.nextBorrow > 0;
+                            return `${pos} (${step.values.a} - ${step.values.b} - 借位 ${step.values.prevBorrow})，結果: ${step.result}${hasNextBorrow ? '，借位 ' + step.values.nextBorrow : ''}`;
+                        }
+                        break;
+                    }
+                    case 'carry':
+                        return `進位: ${step.values.carry} 加到第 ${step.position + 1} 位，結果為 ${step.result}`;
+                    case 'multiply':
+                        return `${step.values.a} 乘 ${step.values.b}，加到第 ${step.position + 1} 位，暫時結果: ${step.result}`;
+                    case 'decimal_adjust':
+                        return step.description;
+                }
+
+                return `${pos}: ${JSON.stringify(step)}`;
+            }
+        }
+
+        // 初始化抽屜控制器
+        const drawerController = new DrawerController();
+
+        // Three.js 材質定義和初始化
+        import * as THREE from 'three';
+        import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+
+        let scene, camera, renderer, controls;
+        let abacus;
+
+        const frameMaterial = new THREE.MeshPhongMaterial({
+            color: 0x4A4A4A,
+            specular: 0x222222,
+            shininess: 30
+        });
+
+        const beadMaterial = new THREE.MeshPhongMaterial({
+            color: 0xD2691E,
+            specular: 0x111111,
+            shininess: 50
+        });
+
+        const metalMaterial = new THREE.MeshStandardMaterial({
+            color: 0xC0C0C0,
+            metalness: 0.9,
+            roughness: 0.1
+        });
+
+        const darkMetalMaterial = new THREE.MeshStandardMaterial({
+            color: 0x808080,
+            metalness: 0.9,
+            roughness: 0.3
+        });
+
+        function init() {
+            scene = new THREE.Scene();
+            scene.background = new THREE.CanvasTexture(generateGradientCanvas());
+
+            camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 1000);
+            camera.position.set(0, 5, 15);
+
+            renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            renderer.shadowMap.enabled = true;
+            renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+            document.body.appendChild(renderer.domElement);
+
+            controls = new OrbitControls(camera, renderer.domElement);
+            controls.enableDamping = true;
+            controls.dampingFactor = 0.05;
+            controls.maxPolarAngle = Math.PI / 2 + Math.PI / 6;
+            controls.minPolarAngle = Math.PI / 3;
+            controls.target.set(0, 1, 0);
+
+            setupLighting();
+            setupCalculatorDrag();
+        }
+
+        function generateGradientCanvas() {
+            const canvas = document.createElement('canvas');
+            canvas.width = 2;
+            canvas.height = 512;
+            const context = canvas.getContext('2d');
+
+            const gradient = context.createLinearGradient(0, 0, 0, 512);
+            gradient.addColorStop(0, '#1a237e');
+            gradient.addColorStop(0.5, '#303f9f');
+            gradient.addColorStop(1, '#3949ab');
+
+            context.fillStyle = gradient;
+            context.fillRect(0, 0, 2, 512);
+
+            return canvas;
+        }
+
+        function setupLighting() {
+            const ambientLight = new THREE.AmbientLight(0x404040, 0.8);
+            scene.add(ambientLight);
+
+            const directionalLight = new THREE.DirectionalLight(0xffffff, 1);
+            directionalLight.position.set(5, 10, 5);
+            directionalLight.castShadow = true;
+            directionalLight.shadow.mapSize.width = 2048;
+            directionalLight.shadow.mapSize.height = 2048;
+
+            const d = 10;
+            directionalLight.shadow.camera.left = -d;
+            directionalLight.shadow.camera.right = d;
+            directionalLight.shadow.camera.top = d;
+            directionalLight.shadow.camera.bottom = -d;
+            directionalLight.shadow.camera.near = 0.1;
+            directionalLight.shadow.camera.far = 30;
+            scene.add(directionalLight);
+
+            const backLight = new THREE.DirectionalLight(0xffffff, 0.5);
+            backLight.position.set(-5, 5, -5);
+            scene.add(backLight);
+
+            const fillLight = new THREE.DirectionalLight(0xffffff, 0.3);
+            fillLight.position.set(0, -5, 5);
+            scene.add(fillLight);
+        }
+
+        function setupCalculatorDrag() {
+            const calculator = document.querySelector('.calculator');
+            let isDragging = false;
+            let currentX;
+            let currentY;
+            let initialX;
+            let initialY;
+            let xOffset = 0;
+            let yOffset = 0;
+
+            calculator.addEventListener("mousedown", dragStart);
+            document.addEventListener("mousemove", drag);
+            document.addEventListener("mouseup", dragEnd);
+
+            function dragStart(e) {
+                if (e.target.classList.contains('calc-btn')) return;
+                initialX = e.clientX - xOffset;
+                initialY = e.clientY - yOffset;
+                if (e.target === calculator || calculator.contains(e.target)) {
+                    isDragging = true;
+                }
+            }
+
+            function drag(e) {
+                if (isDragging) {
+                    e.preventDefault();
+                    currentX = e.clientX - initialX;
+                    currentY = e.clientY - initialY;
+                    xOffset = currentX;
+                    yOffset = currentY;
+                    calculator.style.transform = `translate3d(${currentX}px, ${currentY}px, 0)`;
+                }
+            }
+
+            function dragEnd() {
+                isDragging = false;
+            }
+        }
+
+        function onWindowResize() {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        }
+
+        function animate() {
+            requestAnimationFrame(animate);
+            controls.update();
+            renderer.render(scene, camera);
+        }
+
+        window.addEventListener('resize', onWindowResize, false);
+
+        class Abacus3D {
+            constructor() {
+                this.beadLines = 13;
+                this.beadPerLine = 5;
+                this.beadSep = 3;
+                this.beadRadius = 0.4;
+                this.beadSpacing = 1;
+                this.baseIndex = 8;
+                this.frameDepth = 1;
+                this.frameThickness = 0.25;
+
+                this.beads = [];
+                this.rods = [];
+                this.frame = new THREE.Group();
+                this.raycaster = new THREE.Raycaster();
+                this.mouse = new THREE.Vector2();
+                this.init();
+                this.setupMouseEvents();
+
+                this.disableInteraction = false;
+            }
+
+            init() {
+                this.createFrame();
+                this.createRods();
+                this.createBeads();
+                scene.add(this.frame);
+            }
+
+            createFrame() {
+                const height = this.beadPerLine * this.beadRadius * 2.2 + 1;
+                const width = this.beadLines * this.beadSpacing;
+                const frameWidth = width + 1.2;
+
+                // 框架四邊
+                const frameParts = [
+                    { geometry: new THREE.BoxGeometry(frameWidth, this.frameThickness, this.frameDepth), position: { y: height / 2 } },
+                    { geometry: new THREE.BoxGeometry(frameWidth, this.frameThickness, this.frameDepth), position: { y: -height / 2 } },
+                    { geometry: new THREE.BoxGeometry(this.frameThickness, height + this.frameThickness, this.frameDepth), position: { x: -frameWidth / 2 } },
+                    { geometry: new THREE.BoxGeometry(this.frameThickness, height + this.frameThickness, this.frameDepth), position: { x: frameWidth / 2 } }
+                ];
+
+                frameParts.forEach(part => {
+                    const mesh = new THREE.Mesh(part.geometry, frameMaterial);
+                    Object.assign(mesh.position, part.position);
+                    mesh.castShadow = mesh.receiveShadow = true;
+                    this.frame.add(mesh);
+                });
+
+                // 中間橫樑
+                const beam = new THREE.Mesh(
+                    new THREE.BoxGeometry(frameWidth, 0.2, this.frameDepth * 0.6),
+                    metalMaterial
+                );
+                beam.position.y = this.beadRadius * 2.8;
+                beam.castShadow = beam.receiveShadow = true;
+                this.frame.add(beam);
+
+                // 位置標記
+                const marker = new THREE.Mesh(
+                    new THREE.BoxGeometry(0.15, 0.2, 0.05),
+                    new THREE.MeshBasicMaterial({ color: 0xFFFFFF })
+                );
+                marker.position.set(
+                    (this.baseIndex - this.beadLines / 2) * this.beadSpacing + 0.5,
+                    this.beadRadius * 2.8,
+                    this.frameDepth * 0.31
+                );
+                this.frame.add(marker);
+            }
+
+            createRods() {
+                for (let i = 0; i < this.beadLines; i++) {
+                    const x = (i - this.beadLines / 2) * this.beadSpacing + 0.5;
+                    const height = this.beadPerLine * this.beadRadius * 2.2 + 1;
+
+                    // 主桿
+                    const rod = new THREE.Mesh(
+                        new THREE.CylinderGeometry(0.08, 0.08, height, 16),
+                        metalMaterial
+                    );
+                    rod.position.set(x, 0, 0);
+                    rod.castShadow = rod.receiveShadow = true;
+                    this.rods.push(rod);
+                    this.frame.add(rod);
+
+                    // 連接點
+                    ['top', 'bottom'].forEach(pos => {
+                        const connector = new THREE.Mesh(
+                            new THREE.CylinderGeometry(0.06, 0.06, 0.1, 16),
+                            darkMetalMaterial
+                        );
+                        connector.position.set(x, pos === 'top' ? height / 2 - 0.1 : -height / 2 + 0.1, 0);
+                        connector.castShadow = connector.receiveShadow = true;
+                        this.frame.add(connector);
+                    });
+                }
+            }
+
+            createBeadMaterial() {
+                return new THREE.MeshPhongMaterial({
+                    color: 0xD2691E,
+                    specular: 0x111111,
+                    shininess: 50,
+                    emissive: 0x000000
+                });
+            }
+
+            createBeads() {
+                // 創建珠子形狀
+                const beadShape = new THREE.Shape();
+                const r = this.beadRadius;
+                const cp = r * 0.6;
+
+                beadShape.moveTo(-r, 0)
+                    .bezierCurveTo(-r, cp, -cp, r, 0, r)
+                    .bezierCurveTo(cp, r, r, cp, r, 0)
+                    .bezierCurveTo(r, -cp, cp, -r, 0, -r)
+                    .bezierCurveTo(-cp, -r, -r, -cp, -r, 0);
+
+                const hole = new THREE.Path();
+                hole.absarc(0, 0, r * 0.3, 0, Math.PI * 2, true);
+                beadShape.holes.push(hole);
+
+                const extrudeSettings = {
+                    steps: 2,
+                    depth: r * 0.8,
+                    bevelEnabled: true,
+                    bevelThickness: r * 0.2,
+                    bevelSize: r * 0.15,
+                    bevelSegments: 4
+                };
+
+                const beadGeometry = new THREE.ExtrudeGeometry(beadShape, extrudeSettings);
+                beadGeometry.rotateX(Math.PI / 2);
+
+                // 放置珠子
+                const beamY = this.beadRadius * 2.5;
+                const beadHeight = this.beadRadius;
+                const upperGap = beadHeight * 2.2;
+                const lowerGap = beadHeight * 0.9;
+                const beadSpacingY = this.beadRadius * 1.8;
+
+                for (let i = 0; i < this.beadLines; i++) {
+                    const columnBeads = [];
+                    const x = (i - this.beadLines / 2) * this.beadSpacing + 0.5;
+
+                    for (let j = 0; j < this.beadPerLine; j++) {
+                        // 為每個珠子創建獨立的材質實例
+                        const bead = new THREE.Mesh(beadGeometry, this.createBeadMaterial());
+                        const y = j > this.beadSep ?
+                            beamY + upperGap + beadHeight :
+                            beamY - lowerGap - beadHeight - ((this.beadSep - j) * beadSpacingY);
+
+                        bead.position.set(x, y, 0);
+                        bead.castShadow = bead.receiveShadow = true;
+                        bead.userData = {
+                            line: i,
+                            position: j
+                        };
+
+                        columnBeads.push({
+                            mesh: bead,
+                            active: false,
+                            originalY: y
+                        });
+
+                        this.frame.add(bead);
+                    }
+                    this.beads.push(columnBeads);
+                }
+            }
+
+            setupMouseEvents() {
+                renderer.domElement.addEventListener('mousedown', event => {
+                    if (this.disableInteraction) return;
+
+                    event.preventDefault();
+                    this.mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
+                    this.mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
+                    this.raycaster.setFromCamera(this.mouse, camera);
+
+                    const intersects = this.raycaster.intersectObjects(this.frame.children, true);
+                    if (intersects.length > 0) {
+                        const clicked = intersects[0].object;
+                        if (clicked.userData.line !== undefined) {
+                            this.toggleBead(clicked.userData.line, clicked.userData.position);
+                            document.getElementById('display').textContent = this.calculateValue().toFixed(4);
+                        }
+                    }
+                });
+            }
+
+            toggleBead(line, bead) {
+                const beadObj = this.beads[line][bead];
+                const moveDistance = this.beadRadius * 1.6;
+
+                if (bead > this.beadSep) {
+                    beadObj.mesh.position.y = beadObj.active ?
+                        beadObj.originalY :
+                        beadObj.originalY - moveDistance;
+                } else {
+                    beadObj.mesh.position.y = beadObj.active ?
+                        beadObj.originalY :
+                        beadObj.originalY + moveDistance;
+
+                    // 連動相鄰珠子
+                    for (let j = 0; j <= this.beadSep; j++) {
+                        if (j === bead) continue;
+                        const neighbor = this.beads[line][j];
+                        if ((!beadObj.active && j > bead) || (beadObj.active && j < bead)) {
+                            if (neighbor.active === beadObj.active) {
+                                neighbor.mesh.position.y = beadObj.active ?
+                                    neighbor.originalY :
+                                    neighbor.originalY + moveDistance;
+                                neighbor.active = !neighbor.active;
+                            }
+                        }
+                    }
+                }
+                beadObj.active = !beadObj.active;
+            }
+
+            calculateValue() {
+                let total = 0;
+                const multiplier = Math.pow(10, 4);
+
+                for (let i = 0; i < this.beadLines; i++) {
+                    let columnValue = 0;
+                    for (let j = 0; j < this.beadPerLine; j++) {
+                        if (this.beads[i][j].active) {
+                            columnValue += j > this.beadSep ? 5 : 1;
+                        }
+                    }
+
+                    const position = this.baseIndex - i;
+                    if (position >= 0) {
+                        total += columnValue * Math.pow(10, position) * multiplier;
+                    } else {
+                        total += (columnValue * multiplier) / Math.pow(10, Math.abs(position));
+                    }
+                }
+                return total / multiplier;
+            }
+
+            setValue(value) {
+                // 重置所有珠子
+                this.beads.forEach(column => {
+                    column.forEach(bead => {
+                        if (bead.active) {
+                            bead.mesh.position.y = bead.originalY;
+                            bead.active = false;
+                        }
+                    });
+                });
+
+                const parts = value.toString().split('.');
+                const integerPart = parts[0];
+                const decimalPart = parts[1] || '';
+
+                const integerStr = integerPart.padStart(this.baseIndex + 1, '0');
+                for (let i = 0; i < integerStr.length && i <= this.baseIndex; i++) {
+                    const digit = parseInt(integerStr[integerStr.length - 1 - i]);
+                    const columnIndex = this.baseIndex - i;
+                    if (columnIndex >= 0) {
+                        this.setColumnValue(columnIndex, digit);
+                    }
+                }
+
+                for (let i = 0; i < decimalPart.length && i < 4; i++) {
+                    const digit = parseInt(decimalPart[i]);
+                    const columnIndex = this.baseIndex + 1 + i;
+                    if (columnIndex < this.beadLines) {
+                        this.setColumnValue(columnIndex, digit);
+                    }
+                }
+            }
+
+            setColumnValue(columnIndex, value) {
+                if (value >= 5) {
+                    this.toggleBead(columnIndex, 4);
+                    value -= 5;
+                }
+                for (let i = 0; i < value; i++) {
+                    this.toggleBead(columnIndex, this.beadSep - i);
+                }
+            }
+
+            async animateStep(step) {
+                await new Promise(resolve => {
+                    if (step.type === 'multiply' || step.type === 'carry' || step.type === 'integer' || step.type === 'decimal') {
+                        const columnIndex = step.columnIndex;
+                        const column = this.beads[columnIndex];
+                        if (!column) return resolve();
+
+                        // 計算當前列的值
+                        let currentValue = 0;
+                        column.forEach(bead => {
+                            if (bead.active) {
+                                currentValue += bead.mesh.userData.position > this.beadSep ? 5 : 1;
+                            }
+                        });
+
+                        // 獲取目標值
+                        const targetValue = step.result % 10;
+
+                        // 如果當前值和目標值相同,只做高亮效果
+                        if (currentValue === targetValue) {
+                            // 添加高亮效果
+                            column.forEach(bead => {
+                                if (bead.active) {
+                                    bead.mesh.material.emissive.setHex(0x666600);
+                                    bead.mesh.material.needsUpdate = true;
+
+                                    // 1秒後恢復原樣
+                                    setTimeout(() => {
+                                        bead.mesh.material.emissive.setHex(0x000000);
+                                        bead.mesh.material.needsUpdate = true;
+                                    }, 1000);
+                                }
+                            });
+
+                            setTimeout(() => resolve(), 1000);
+                        } else {
+                            // 重置該欄位所有珠子
+                            column.forEach(bead => {
+                                if (bead.active) {
+                                    this.toggleBead(columnIndex, bead.mesh.userData.position);
+                                }
+                            });
+
+                            // 設定新的珠子位置
+                            setTimeout(() => {
+                                if (targetValue >= 5) {
+                                    this.toggleBead(columnIndex, 4);
+                                }
+                                for (let i = 0; i < targetValue % 5; i++) {
+                                    this.toggleBead(columnIndex, this.beadSep - i);
+                                }
+                                resolve();
+                            }, 100);
+                        }
+                    } else if (step.type === 'decimal_adjust') {
+                        // 小數點調整不需要動畫
+                        resolve();
+                    } else {
+                        resolve();
+                    }
+                });
+            }
+
+            highlightColumn(columnIndex) {
+                const column = this.beads[columnIndex];
+                column.forEach(bead => {
+                    if (bead.active) {
+                        bead.mesh.material.emissive.setHex(0x666600);
+                        bead.mesh.material.needsUpdate = true;
+
+                        // 1秒後恢復
+                        setTimeout(() => {
+                            bead.mesh.material.emissive.setHex(0x000000);
+                            bead.mesh.material.needsUpdate = true;
+                        }, 1000);
+                    }
+                });
+            }
+
+            setValueImmediate(value) {
+                const parts = value.toString().split('.');
+                const integerPart = parts[0];
+                const decimalPart = parts[1] || '';
+
+                const integerStr = integerPart.padStart(this.baseIndex + 1, '0');
+                for (let i = 0; i < integerStr.length && i <= this.baseIndex; i++) {
+                    const digit = parseInt(integerStr[integerStr.length - 1 - i]);
+                    const columnIndex = this.baseIndex - i;
+                    if (columnIndex >= 0) {
+                        // 計算當前列的值
+                        let currentValue = 0;
+                        this.beads[columnIndex].forEach(bead => {
+                            if (bead.active) {
+                                currentValue += bead.mesh.userData.position > this.beadSep ? 5 : 1;
+                            }
+                        });
+
+                        // 如果值相同，做 highlight
+                        if (currentValue === digit) {
+                            this.highlightColumn(columnIndex);
+                        } else {
+                            // 值不同，才重置並設定新值
+                            this.setColumnValueImmediate(columnIndex, digit);
+                        }
+                    }
+                }
+
+                for (let i = 0; i < decimalPart.length && i < 4; i++) {
+                    const digit = parseInt(decimalPart[i]);
+                    const columnIndex = this.baseIndex + 1 + i;
+                    if (columnIndex < this.beadLines) {
+                        // 計算當前列的值
+                        let currentValue = 0;
+                        this.beads[columnIndex].forEach(bead => {
+                            if (bead.active) {
+                                currentValue += bead.mesh.userData.position > this.beadSep ? 5 : 1;
+                            }
+                        });
+
+                        // 如果值相同，做 highlight
+                        if (currentValue === digit) {
+                            this.highlightColumn(columnIndex);
+                        } else {
+                            // 值不同，才重置並設定新值
+                            this.setColumnValueImmediate(columnIndex, digit);
+                        }
+                    }
+                }
+            }
+
+            setColumnValueImmediate(columnIndex, value) {
+                // 先重置該列所有珠子
+                this.beads[columnIndex].forEach(bead => {
+                    if (bead.active) {
+                        bead.mesh.position.y = bead.originalY;
+                        bead.active = false;
+                    }
+                });
+
+                // 設定新值
+                if (value >= 5) {
+                    const bead = this.beads[columnIndex][4];
+                    bead.mesh.position.y = bead.originalY - this.beadRadius * 1.6;
+                    bead.active = true;
+                    value -= 5;
+                }
+
+                for (let i = 0; i < value; i++) {
+                    const bead = this.beads[columnIndex][this.beadSep - i];
+                    bead.mesh.position.y = bead.originalY + this.beadRadius * 1.6;
+                    bead.active = true;
+                }
+            }
+        }
+
+        class Calculator {
+            constructor(abacus) {
+                this.abacus = abacus;
+                this.currentValue = '0';
+                this.previousValue = '';
+                this.operator = null;
+                this.shouldResetDisplay = false;
+                this.setupEventListeners();
+
+                drawerController.setCalculatorAndAbacus(this, abacus);
+            }
+
+            setupEventListeners() {
+                document.querySelectorAll('.calc-btn[data-value]').forEach(button => {
+                    button.addEventListener('click', (e) => {
+                        if (drawerController.isAutoPlaying) {
+                            e.preventDefault();
+                            return;
+                        }
+                        this.handleNumber(button.dataset.value);
+                    });
+                });
+
+                document.querySelectorAll('.calc-btn[data-op]').forEach(button => {
+                    button.addEventListener('click', (e) => {
+                        if (drawerController.isAutoPlaying) {
+                            e.preventDefault();
+                            return;
+                        }
+                        this.handleOperator(button.dataset.op);
+                    });
+                });
+            }
+
+            handleNumber(value) {
+                if (this.shouldResetDisplay) {
+                    this.currentValue = '';
+                    this.shouldResetDisplay = false;
+                }
+
+                const parts = this.currentValue.split('.');
+                const integerPart = parts[0];
+                const decimalPart = parts[1] || '';
+
+                if (value === '.' && !this.currentValue.includes('.')) {
+                    this.currentValue = this.currentValue === '' ? '0.' : this.currentValue + '.';
+                } else if (this.currentValue === '0' && value !== '.') {
+                    this.currentValue = value;
+                } else {
+                    if (this.currentValue.includes('.') && decimalPart.length >= 4) {
+                        this.showTooltip('小數點後最多只能輸入4位數字');
+                        return;
+                    } else if (!this.currentValue.includes('.') && integerPart.length >= 9) {
+                        this.showTooltip('整數部分最多只能輸入9位數字');
+                        return;
+                    }
+                    this.currentValue += value;
+                }
+
+                this.updateDisplay();
+                if (!this.operator) {
+                    const numValue = parseFloat(this.currentValue);
+                    if (!isNaN(numValue)) {
+                        this.abacus.setValue(numValue);
+                    }
+                }
+            }
+
+            handleOperator(op) {
+                if (op === 'clear') {
+                    this.resetCalculator();
+                    if (drawerController.autoDemoCheckbox.checked) {
+                        drawerController.setSteps([]);
+                    }
+                    return;
+                }
+
+                const currentNum = this.operator ? parseFloat(this.currentValue) : this.abacus.calculateValue();
+
+                if (op === 'equals' && this.operator && this.previousValue !== '') {
+                    const prevNum = parseFloat(this.previousValue);
+                    const result = this.calculate(prevNum, currentNum);
+
+                    if (result !== null && !isNaN(result)) {
+                        if (this.isResultInvalid(result)) {
+                            const operation = this.getOperationSymbol();
+                            drawerController.showMessage(`${prevNum} ${operation} ${currentNum} = ${result} (超出範圍)`);
+                            this.resetCalculator();
+                            return;
+                        }
+
+                        const steps = CalculationSteps.generateSteps(prevNum, currentNum, this.operator);
+                        drawerController.showMessage(`${prevNum} ${this.getOperationSymbol()} ${currentNum}`);
+
+                        if (drawerController.autoDemoCheckbox.checked) {
+                            drawerController.setSteps(steps, prevNum, currentNum);
+                        } else {
+                            this.currentValue = this.formatResult(result);
+                            this.previousValue = '';
+                            this.operator = null;
+                            this.updateDisplay();
+                            this.abacus.setValue(result);
+                        }
+                    }
+                    return;
+                }
+
+                if (this.previousValue === '') {
+                    this.previousValue = currentNum.toString();
+                } else if (this.operator) {
+                    const prevNum = parseFloat(this.previousValue);
+                    const result = this.calculate(prevNum, currentNum);
+
+                    if (result !== null) {
+                        if (this.isResultInvalid(result)) {
+                            const operation = this.getOperationSymbol();
+                            drawerController.showMessage(`${prevNum} ${operation} ${currentNum} = ${result} (超出範圍)`);
+                            this.resetCalculator();
+                            return;
+                        }
+                        this.previousValue = result.toFixed(4);
+                    }
+                }
+
+                this.operator = op;
+                this.shouldResetDisplay = true;
+            }
+
+            formatResult(result) {
+                // 將數字轉為字符串並分割整數和小數部分
+                const [integerPart, decimalPart = ''] = result.toFixed(4).split('.');
+
+                // 移除整數部分不必要的前導零
+                const trimmedInteger = integerPart.replace(/^0+(\d)/, '$1');
+
+                // 如果有小數部分，則加回小數點和小數部分
+                return decimalPart ? `${trimmedInteger}.${decimalPart}` : trimmedInteger;
+            }
+
+            calculate(num1, num2) {
+                let result;
+                switch (this.operator) {
+                    case 'add': result = num1 + num2; break;
+                    case 'subtract': result = num1 - num2; break;
+                    case 'multiply':
+                        const multiplier = Math.pow(10, 4);
+                        result = Math.round((num1 * num2) * multiplier) / multiplier;
+                        break;
+                    default: return null;
+                }
+                return result;
+            }
+
+            isResultInvalid(result) {
+                if (result < 0) return true;
+                const parts = result.toString().split('.');
+                const integerPart = parts[0];
+                return integerPart.length > 9;
+            }
+
+            getOperationSymbol() {
+                switch (this.operator) {
+                    case 'add': return '+';
+                    case 'subtract': return '-';
+                    case 'multiply': return '×';
+                    default: return '';
+                }
+            }
+
+            showTooltip(message) {
+                drawerController.showMessage(message);
+            }
+
+            updateDisplay() {
+                const value = this.operator ? this.currentValue : this.formatResult(parseFloat(this.currentValue));
+
+                // 當要顯示到 display 時，檢查小數點
+                const [integerPart, decimalPart = ''] = value.split('.');
+                const isDecimalZero = decimalPart.split('').every(d => d === '0');
+                const displayValue = isDecimalZero ? integerPart : `${integerPart}.${decimalPart}`;
+
+                document.getElementById('display').textContent = displayValue;
+            }
+
+            resetCalculator() {
+                this.currentValue = '0';
+                this.previousValue = '';
+                this.operator = null;
+                this.shouldResetDisplay = false;
+                this.updateDisplay();
+                this.abacus.setValue(0);
+                drawerController.showMessage('');
+                drawerController.setSteps([]);
+            }
+        }
+
+        // 初始化
+        init();
+        abacus = new Abacus3D();
+        const calculator = new Calculator(abacus);
+        animate();
+    </script>
+</body>
+
+</html>
