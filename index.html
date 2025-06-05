@@ -1,15 +1,15 @@
 <!DOCTYPE html>
-<html lang="zh-TW">
+<html lang="en">
 
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>3D算盤與計算機模擬器</title>
+    <title>3D Abacus & Calculator Simulator</title>
     <style>
         body {
             margin: 0;
             overflow: hidden;
-            font-family: "Microsoft JhengHei", sans-serif;
+            font-family: "Arial", sans-serif;
         }
 
         .drawer {
@@ -251,7 +251,7 @@
         <button class="drawer-toggle">></button>
         <div class="auto-demo-control">
             <input type="checkbox" id="autoDemo">
-            <label for="autoDemo">自動演示</label>
+            <label for="autoDemo">Auto Demo</label>
         </div>
         <div class="message-box" id="messageBox"></div>
         <div class="step-list" id="stepList"></div>
@@ -299,7 +299,7 @@
     </script>
 
     <script type="module">
-        // 計算步驟類
+        // Calculation Steps Class
         class CalculationSteps {
             static generateSteps(num1, num2, operator) {
                 switch (operator) {
@@ -324,7 +324,7 @@
                 const steps = [];
                 let prevCarry = 0;
 
-                // 小數部分
+                // Decimal part processing
                 const maxDecimalLength = Math.max(aParts.decimalPart.length, bParts.decimalPart.length);
                 while (aParts.decimalPart.length < maxDecimalLength) aParts.decimalPart.push(0);
                 while (bParts.decimalPart.length < maxDecimalLength) bParts.decimalPart.push(0);
@@ -347,7 +347,7 @@
                     prevCarry = nextCarry;
                 }
 
-                // 整數部分
+                // Integer part processing
                 const maxIntegerLength = Math.max(aParts.integerPart.length, bParts.integerPart.length);
                 while (aParts.integerPart.length < maxIntegerLength) aParts.integerPart.push(0);
                 while (bParts.integerPart.length < maxIntegerLength) bParts.integerPart.push(0);
@@ -370,7 +370,7 @@
                     prevCarry = nextCarry;
                 }
 
-                // 最後一個進位處理
+                // Handle final carry
                 if (prevCarry > 0) {
                     steps.push({
                         type: 'integer',
@@ -395,7 +395,7 @@
                 const steps = [];
                 let prevBorrow = 0;
 
-                // 小數部分
+                // Decimal part processing
                 const maxDecimalLength = Math.max(aParts.decimalPart.length, bParts.decimalPart.length);
                 while (aParts.decimalPart.length < maxDecimalLength) aParts.decimalPart.push(0);
                 while (bParts.decimalPart.length < maxDecimalLength) bParts.decimalPart.push(0);
@@ -419,7 +419,7 @@
                     prevBorrow = nextBorrow;
                 }
 
-                // 整數部分
+                // Integer part processing
                 const maxIntegerLength = Math.max(aParts.integerPart.length, bParts.integerPart.length);
                 while (aParts.integerPart.length < maxIntegerLength) aParts.integerPart.push(0);
                 while (bParts.integerPart.length < maxIntegerLength) bParts.integerPart.push(0);
@@ -450,11 +450,11 @@
                 const aParts = this.splitNumber(a);
                 const bParts = this.splitNumber(b);
 
-                // 移除小數點計算實際數字
+                // Remove decimal points to calculate actual numbers
                 const aNum = parseInt(aParts.integerPart.reverse().join('') + aParts.decimalPart.join(''));
                 const bNum = parseInt(bParts.integerPart.reverse().join('') + bParts.decimalPart.join(''));
 
-                // 計算小數位數
+                // Calculate decimal places
                 const decimalPlaces = aParts.decimalPart.length + bParts.decimalPart.length;
 
                 const aDigits = aNum.toString().split('').map(Number).reverse();
@@ -463,7 +463,7 @@
                 const result = Array(aDigits.length + bDigits.length).fill(0);
                 const steps = [];
 
-                // 按位相乘
+                // Digit-by-digit multiplication
                 for (let i = 0; i < bDigits.length; i++) {
                     for (let j = 0; j < aDigits.length; j++) {
                         const product = bDigits[i] * aDigits[j];
@@ -506,7 +506,7 @@
                     steps.push({
                         type: 'decimal_adjust',
                         decimalPlaces: decimalPlaces,
-                        description: `將結果往左移動${decimalPlaces}位小數點`
+                        description: `Move decimal point ${decimalPlaces} places to the left`
                     });
                 }
 
@@ -514,7 +514,7 @@
             }
         }
 
-        // 抽屜控制類
+        // Drawer Controller Class
         class DrawerController {
             constructor() {
                 this.drawer = document.querySelector('.drawer');
@@ -597,13 +597,13 @@
 
                     setTimeout(() => this.demoNextStep(), 666);
                 } else {
-                    // 在最後一步完成後檢查結果
+                    // Check results after the final step is completed
                     const prev = parseFloat(this.previousValue);
                     const curr = parseFloat(this.currentValue);
                     const calculatedResult = this.calculator.calculate(prev, curr);
                     const abacusValue = this.abacus.calculateValue();
 
-                    // 如果算盤值與計算值不同，強制更正
+                    // Force correction if abacus value differs from calculated value
                     if (Math.abs(calculatedResult - abacusValue) > 0.0001) {
                         this.abacus.setValueImmediate(calculatedResult);
                     }
@@ -643,20 +643,20 @@
             formatStep(step) {
                 const getPositionName = (index) => {
                     const integerPositions = {
-                        1: "個位", 2: "十位", 3: "百位",
-                        4: "千位", 5: "萬位", 6: "十萬位",
-                        7: "百萬位", 8: "千萬位", 9: "億位"
+                        1: "Ones", 2: "Tens", 3: "Hundreds",
+                        4: "Thousands", 5: "Ten Thousands", 6: "Hundred Thousands",
+                        7: "Millions", 8: "Ten Millions", 9: "Hundred Millions"
                     };
                     const decimalPositions = {
-                        1: "小數第一位", 2: "小數第二位",
-                        3: "小數第三位", 4: "小數第四位"
+                        1: "First decimal place", 2: "Second decimal place",
+                        3: "Third decimal place", 4: "Fourth decimal place"
                     };
 
                     const columnIndex = step.columnIndex + 1;
                     if (columnIndex <= 9) {
-                        return integerPositions[9 - columnIndex + 1] || `第${columnIndex}位`;
+                        return integerPositions[9 - columnIndex + 1] || `Position ${columnIndex}`;
                     } else {
-                        return decimalPositions[columnIndex - 9] || `第${columnIndex}位`;
+                        return decimalPositions[columnIndex - 9] || `Position ${columnIndex}`;
                     }
                 };
 
@@ -667,17 +667,17 @@
                     case 'integer': {
                         if (step.values.prevCarry !== undefined) {
                             const hasNextCarry = step.values.nextCarry > 0;
-                            return `${pos} (${step.values.a} + ${step.values.b} + 進位 ${step.values.prevCarry})，結果: ${step.result}${hasNextCarry ? '，進位 ' + step.values.nextCarry : ''}`;
+                            return `${pos} (${step.values.a} + ${step.values.b} + carry ${step.values.prevCarry}), result: ${step.result}${hasNextCarry ? ', carry ' + step.values.nextCarry : ''}`;
                         } else if (step.values.prevBorrow !== undefined) {
                             const hasNextBorrow = step.values.nextBorrow > 0;
-                            return `${pos} (${step.values.a} - ${step.values.b} - 借位 ${step.values.prevBorrow})，結果: ${step.result}${hasNextBorrow ? '，借位 ' + step.values.nextBorrow : ''}`;
+                            return `${pos} (${step.values.a} - ${step.values.b} - borrow ${step.values.prevBorrow}), result: ${step.result}${hasNextBorrow ? ', borrow ' + step.values.nextBorrow : ''}`;
                         }
                         break;
                     }
                     case 'carry':
-                        return `進位: ${step.values.carry} 加到第 ${step.position + 1} 位，結果為 ${step.result}`;
+                        return `Carry: ${step.values.carry} added to position ${step.position + 1}, result: ${step.result}`;
                     case 'multiply':
-                        return `${step.values.a} 乘 ${step.values.b}，加到第 ${step.position + 1} 位，暫時結果: ${step.result}`;
+                        return `${step.values.a} × ${step.values.b}, added to position ${step.position + 1}, temporary result: ${step.result}`;
                     case 'decimal_adjust':
                         return step.description;
                 }
@@ -686,10 +686,10 @@
             }
         }
 
-        // 初始化抽屜控制器
+        // Initialize drawer controller
         const drawerController = new DrawerController();
 
-        // Three.js 材質定義和初始化
+        // Three.js material definitions and initialization
         import * as THREE from 'three';
         import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 
@@ -876,7 +876,7 @@
                 const width = this.beadLines * this.beadSpacing;
                 const frameWidth = width + 1.2;
 
-                // 框架四邊
+                // Frame edges
                 const frameParts = [
                     { geometry: new THREE.BoxGeometry(frameWidth, this.frameThickness, this.frameDepth), position: { y: height / 2 } },
                     { geometry: new THREE.BoxGeometry(frameWidth, this.frameThickness, this.frameDepth), position: { y: -height / 2 } },
@@ -891,7 +891,7 @@
                     this.frame.add(mesh);
                 });
 
-                // 中間橫樑
+                // Center crossbar
                 const beam = new THREE.Mesh(
                     new THREE.BoxGeometry(frameWidth, 0.2, this.frameDepth * 0.6),
                     metalMaterial
@@ -900,7 +900,7 @@
                 beam.castShadow = beam.receiveShadow = true;
                 this.frame.add(beam);
 
-                // 位置標記
+                // Position marker
                 const marker = new THREE.Mesh(
                     new THREE.BoxGeometry(0.15, 0.2, 0.05),
                     new THREE.MeshBasicMaterial({ color: 0xFFFFFF })
@@ -918,7 +918,7 @@
                     const x = (i - this.beadLines / 2) * this.beadSpacing + 0.5;
                     const height = this.beadPerLine * this.beadRadius * 2.2 + 1;
 
-                    // 主桿
+                    // Main rod
                     const rod = new THREE.Mesh(
                         new THREE.CylinderGeometry(0.08, 0.08, height, 16),
                         metalMaterial
@@ -928,7 +928,7 @@
                     this.rods.push(rod);
                     this.frame.add(rod);
 
-                    // 連接點
+                    // Connectors
                     ['top', 'bottom'].forEach(pos => {
                         const connector = new THREE.Mesh(
                             new THREE.CylinderGeometry(0.06, 0.06, 0.1, 16),
@@ -951,7 +951,7 @@
             }
 
             createBeads() {
-                // 創建珠子形狀
+                // Create bead shape
                 const beadShape = new THREE.Shape();
                 const r = this.beadRadius;
                 const cp = r * 0.6;
@@ -978,7 +978,7 @@
                 const beadGeometry = new THREE.ExtrudeGeometry(beadShape, extrudeSettings);
                 beadGeometry.rotateX(Math.PI / 2);
 
-                // 放置珠子
+                // Place beads
                 const beamY = this.beadRadius * 2.5;
                 const beadHeight = this.beadRadius;
                 const upperGap = beadHeight * 2.2;
@@ -990,7 +990,7 @@
                     const x = (i - this.beadLines / 2) * this.beadSpacing + 0.5;
 
                     for (let j = 0; j < this.beadPerLine; j++) {
-                        // 為每個珠子創建獨立的材質實例
+                        // Create independent material instance for each bead
                         const bead = new THREE.Mesh(beadGeometry, this.createBeadMaterial());
                         const y = j > this.beadSep ?
                             beamY + upperGap + beadHeight :
@@ -1048,7 +1048,7 @@
                         beadObj.originalY :
                         beadObj.originalY + moveDistance;
 
-                    // 連動相鄰珠子
+                    // Link adjacent beads
                     for (let j = 0; j <= this.beadSep; j++) {
                         if (j === bead) continue;
                         const neighbor = this.beads[line][j];
@@ -1088,7 +1088,7 @@
             }
 
             setValue(value) {
-                // 重置所有珠子
+                // Reset all beads
                 this.beads.forEach(column => {
                     column.forEach(bead => {
                         if (bead.active) {
@@ -1137,7 +1137,7 @@
                         const column = this.beads[columnIndex];
                         if (!column) return resolve();
 
-                        // 計算當前列的值
+                        // Calculate current column value
                         let currentValue = 0;
                         column.forEach(bead => {
                             if (bead.active) {
@@ -1145,18 +1145,18 @@
                             }
                         });
 
-                        // 獲取目標值
+                        // Get target value
                         const targetValue = step.result % 10;
 
-                        // 如果當前值和目標值相同,只做高亮效果
+                        // If current value equals target value, only do highlight effect
                         if (currentValue === targetValue) {
-                            // 添加高亮效果
+                            // Add highlight effect
                             column.forEach(bead => {
                                 if (bead.active) {
                                     bead.mesh.material.emissive.setHex(0x666600);
                                     bead.mesh.material.needsUpdate = true;
 
-                                    // 1秒後恢復原樣
+                                    // Restore after 1 second
                                     setTimeout(() => {
                                         bead.mesh.material.emissive.setHex(0x000000);
                                         bead.mesh.material.needsUpdate = true;
@@ -1166,14 +1166,14 @@
 
                             setTimeout(() => resolve(), 1000);
                         } else {
-                            // 重置該欄位所有珠子
+                            // Reset all beads in this column
                             column.forEach(bead => {
                                 if (bead.active) {
                                     this.toggleBead(columnIndex, bead.mesh.userData.position);
                                 }
                             });
 
-                            // 設定新的珠子位置
+                            // Set new bead positions
                             setTimeout(() => {
                                 if (targetValue >= 5) {
                                     this.toggleBead(columnIndex, 4);
@@ -1185,7 +1185,7 @@
                             }, 100);
                         }
                     } else if (step.type === 'decimal_adjust') {
-                        // 小數點調整不需要動畫
+                        // Decimal adjustment doesn't need animation
                         resolve();
                     } else {
                         resolve();
@@ -1200,7 +1200,7 @@
                         bead.mesh.material.emissive.setHex(0x666600);
                         bead.mesh.material.needsUpdate = true;
 
-                        // 1秒後恢復
+                        // Restore after 1 second
                         setTimeout(() => {
                             bead.mesh.material.emissive.setHex(0x000000);
                             bead.mesh.material.needsUpdate = true;
@@ -1219,7 +1219,7 @@
                     const digit = parseInt(integerStr[integerStr.length - 1 - i]);
                     const columnIndex = this.baseIndex - i;
                     if (columnIndex >= 0) {
-                        // 計算當前列的值
+                        // Calculate current column value
                         let currentValue = 0;
                         this.beads[columnIndex].forEach(bead => {
                             if (bead.active) {
@@ -1227,11 +1227,11 @@
                             }
                         });
 
-                        // 如果值相同，做 highlight
+                        // If values are the same, do highlight
                         if (currentValue === digit) {
                             this.highlightColumn(columnIndex);
                         } else {
-                            // 值不同，才重置並設定新值
+                            // Values differ, reset and set new value
                             this.setColumnValueImmediate(columnIndex, digit);
                         }
                     }
@@ -1241,7 +1241,7 @@
                     const digit = parseInt(decimalPart[i]);
                     const columnIndex = this.baseIndex + 1 + i;
                     if (columnIndex < this.beadLines) {
-                        // 計算當前列的值
+                        // Calculate current column value
                         let currentValue = 0;
                         this.beads[columnIndex].forEach(bead => {
                             if (bead.active) {
@@ -1249,11 +1249,11 @@
                             }
                         });
 
-                        // 如果值相同，做 highlight
+                        // If values are the same, do highlight
                         if (currentValue === digit) {
                             this.highlightColumn(columnIndex);
                         } else {
-                            // 值不同，才重置並設定新值
+                            // Values differ, reset and set new value
                             this.setColumnValueImmediate(columnIndex, digit);
                         }
                     }
@@ -1261,7 +1261,7 @@
             }
 
             setColumnValueImmediate(columnIndex, value) {
-                // 先重置該列所有珠子
+                // First reset all beads in this column
                 this.beads[columnIndex].forEach(bead => {
                     if (bead.active) {
                         bead.mesh.position.y = bead.originalY;
@@ -1269,7 +1269,7 @@
                     }
                 });
 
-                // 設定新值
+                // Set new value
                 if (value >= 5) {
                     const bead = this.beads[columnIndex][4];
                     bead.mesh.position.y = bead.originalY - this.beadRadius * 1.6;
@@ -1335,10 +1335,10 @@
                     this.currentValue = value;
                 } else {
                     if (this.currentValue.includes('.') && decimalPart.length >= 4) {
-                        this.showTooltip('小數點後最多只能輸入4位數字');
+                        this.showTooltip('Maximum 4 digits allowed after decimal point');
                         return;
                     } else if (!this.currentValue.includes('.') && integerPart.length >= 9) {
-                        this.showTooltip('整數部分最多只能輸入9位數字');
+                        this.showTooltip('Maximum 9 digits allowed for integer part');
                         return;
                     }
                     this.currentValue += value;
@@ -1371,7 +1371,7 @@
                     if (result !== null && !isNaN(result)) {
                         if (this.isResultInvalid(result)) {
                             const operation = this.getOperationSymbol();
-                            drawerController.showMessage(`${prevNum} ${operation} ${currentNum} = ${result} (超出範圍)`);
+                            drawerController.showMessage(`${prevNum} ${operation} ${currentNum} = ${result} (Out of range)`);
                             this.resetCalculator();
                             return;
                         }
@@ -1401,7 +1401,7 @@
                     if (result !== null) {
                         if (this.isResultInvalid(result)) {
                             const operation = this.getOperationSymbol();
-                            drawerController.showMessage(`${prevNum} ${operation} ${currentNum} = ${result} (超出範圍)`);
+                            drawerController.showMessage(`${prevNum} ${operation} ${currentNum} = ${result} (Out of range)`);
                             this.resetCalculator();
                             return;
                         }
@@ -1414,13 +1414,13 @@
             }
 
             formatResult(result) {
-                // 將數字轉為字符串並分割整數和小數部分
+                // Convert number to string and split integer and decimal parts
                 const [integerPart, decimalPart = ''] = result.toFixed(4).split('.');
 
-                // 移除整數部分不必要的前導零
+                // Remove unnecessary leading zeros from integer part
                 const trimmedInteger = integerPart.replace(/^0+(\d)/, '$1');
 
-                // 如果有小數部分，則加回小數點和小數部分
+                // If there's a decimal part, add back the decimal point and decimal part
                 return decimalPart ? `${trimmedInteger}.${decimalPart}` : trimmedInteger;
             }
 
@@ -1461,7 +1461,7 @@
             updateDisplay() {
                 const value = this.operator ? this.currentValue : this.formatResult(parseFloat(this.currentValue));
 
-                // 當要顯示到 display 時，檢查小數點
+                // When displaying to screen, check decimal point
                 const [integerPart, decimalPart = ''] = value.split('.');
                 const isDecimalZero = decimalPart.split('').every(d => d === '0');
                 const displayValue = isDecimalZero ? integerPart : `${integerPart}.${decimalPart}`;
@@ -1481,7 +1481,7 @@
             }
         }
 
-        // 初始化
+        // Initialize
         init();
         abacus = new Abacus3D();
         const calculator = new Calculator(abacus);
